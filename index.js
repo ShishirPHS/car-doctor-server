@@ -17,6 +17,12 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// middlewares
+const logger = async (req, res, next) => {
+  console.log("called:", req.host, req.originalUrl);
+  next();
+};
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qhpx3vr.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -37,7 +43,7 @@ async function run() {
     const bookingCollection = client.db("carDoctor").collection("bookings");
 
     // auth related api
-    app.post("/jwt", async (req, res) => {
+    app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log(user);
 
@@ -54,7 +60,7 @@ async function run() {
 
     // services related api
     // get all services infos from database
-    app.get("/services", async (req, res) => {
+    app.get("/services", logger, async (req, res) => {
       const cursor = serviceCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -69,7 +75,7 @@ async function run() {
     });
 
     // get booking data from database filtered by user email
-    app.get("/bookings", async (req, res) => {
+    app.get("/bookings", logger, async (req, res) => {
       console.log(req.query.email);
       console.log("token", req.cookies.token);
       let query = {};
