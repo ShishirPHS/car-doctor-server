@@ -23,6 +23,27 @@ const logger = async (req, res, next) => {
   next();
 };
 
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log("value of token in middleware: ", token);
+  if (!token) {
+    return res.status(401).send({ message: "not authorized" });
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    //error
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized" });
+    }
+
+    // if token is valid it would be decoded
+    console.log("value in the token: ", decoded);
+    req.user = decoded;
+    next();
+  });
+};
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qhpx3vr.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -74,10 +95,12 @@ async function run() {
       res.send(result);
     });
 
+    // bookings related api
     // get booking data from database filtered by user email
-    app.get("/bookings", logger, async (req, res) => {
+    app.get("/bookings", logger, verifyToken, async (req, res) => {
       console.log(req.query.email);
       console.log("token", req.cookies.token);
+      console.log("user in the valid token: ", req.user);
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
